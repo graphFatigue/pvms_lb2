@@ -7,7 +7,6 @@ namespace TcpServer.Services
     {
         private readonly ILogger<TcpServerService> _logger;
         private TcpListener _tcpListener;
-        private readonly int _port = 8080;
         private readonly int _numberOnBackend = 100;
         private Task _executingTask;
         private CancellationTokenSource _cts;
@@ -21,23 +20,22 @@ namespace TcpServer.Services
         {
             _cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             _executingTask = RunServerAsync(_cts.Token);
-
-            return _executingTask.IsCompleted ? _executingTask : Task.CompletedTask;
+            return Task.CompletedTask;
         }
 
         private async Task RunServerAsync(CancellationToken cancellationToken)
         {
-            _tcpListener = new TcpListener(IPAddress.Any, _port);
+            _tcpListener = new TcpListener(IPAddress.Any, 8080);
             _tcpListener.Start();
 
-            _logger.LogInformation($"Server is listening on port {_port}");
+            _logger.LogInformation($"Server is listening on port 8080");
 
             try
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
                     var client = await _tcpListener.AcceptTcpClientAsync(cancellationToken);
-                    _ = HandleClientAsync(client, cancellationToken);
+                    _ = HandleClientAsync(client);
                 }
             }
             catch (OperationCanceledException)
@@ -50,31 +48,33 @@ namespace TcpServer.Services
             }
         }
 
-        private async Task HandleClientAsync(TcpClient client, CancellationToken cancellationToken)
+        private async Task HandleClientAsync(TcpClient client)
         {
-            _logger.LogInformation("Client connected");
+            var remoteEndpoint = client.Client.RemoteEndPoint as IPEndPoint;
+            _logger.LogInformation($"Client connected from {remoteEndpoint}");
 
             try
             {
                 using (client)
                 using (var stream = client.GetStream())
-                using (var reader = new StreamReader(stream))
-                using (var writer = new StreamWriter(stream))
                 {
-                    while (!cancellationToken.IsCancellationRequested)
+                    var buffer = new byte[1024];
+
+                    while (true)
                     {
-                        var data = await reader.ReadLineAsync();
-                        if (string.IsNullOrEmpty(data)) break;
+                        var bytesRead = await stream.ReadAsync(buffer);
+                        if (bytesRead == 0) break;
+
+                        var data = System.Text.Encoding.ASCII.GetString(buffer, 0, bytesRead).Trim();
+                        _logger.LogInformation($"Received: {data}");
 
                         if (int.TryParse(data, out var numberFromClient))
                         {
-                            _logger.LogInformation($"Received number from client: {numberFromClient}");
+                            var response = Math.Min(numberFromClient, _numberOnBackend).ToString();
+                            var responseBytes = System.Text.Encoding.ASCII.GetBytes(response);
 
-                            var smallestNumber = Math.Min(numberFromClient, _numberOnBackend);
-                            await writer.WriteLineAsync(smallestNumber.ToString());
-                            await writer.FlushAsync();
-
-                            _logger.LogInformation($"Sent smallest number to client: {smallestNumber}");
+                            await stream.WriteAsync(responseBytes);
+                            _logger.LogInformation($"Sent: {response}");
                         }
                     }
                 }
@@ -85,18 +85,15 @@ namespace TcpServer.Services
             }
             finally
             {
-                _logger.LogInformation("Client disconnected");
+                _logger.LogInformation($"Client disconnected: {remoteEndpoint}");
             }
         }
 
         public async Task StopAsync(CancellationToken cancellationToken)
         {
-            if (_executingTask == null) return;
-
-            _cts.Cancel();
-            _tcpListener.Stop();
-
-            await Task.WhenAny(_executingTask, Task.Delay(-1, cancellationToken));
+            _tcpListener?.Stop();
+            _cts?.Cancel();
+            await (_executingTask ?? Task.CompletedTask);
         }
 
         public void Dispose()

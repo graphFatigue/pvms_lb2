@@ -1,34 +1,21 @@
 import socket
 
 def main():
-    host = "192.168.56.101"
+    host = "127.0.0.1"
     port = 8080
-    
-    try:
-        # Create a TCP socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        
-        # Connect to server
-        sock.connect((host, port))
+
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        s.connect((host, port))
         print(f"Connected to {host}:{port}")
         
-        # Get user input
-        message = input("Please enter the message: ")
-        
-        # Send message to server
-        sock.sendall(message.encode())
-        
-        # Receive response from server
-        response = sock.recv(256).decode()
-        print(f"From Server: {response}")
-        
-    except socket.error as e:
-        print(f"Socket error: {e}")
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        # Close the socket
-        sock.close()
+        while True:
+            message = input("Enter number: ")
+            if message.lower() == 'quit':
+                break
+            
+            s.sendall((message + '\n').encode())
+            data = s.recv(1024)
+            print(f"Received: {data.decode()}")
 
 if __name__ == "__main__":
     main()
