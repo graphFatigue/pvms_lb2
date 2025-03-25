@@ -1,0 +1,6 @@
+@UdpServer_HostAddress = http://localhost:5219
+
+GET {{UdpServer_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
