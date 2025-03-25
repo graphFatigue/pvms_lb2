@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text;
 
 namespace TcpServer.Services
 {
@@ -74,10 +75,11 @@ namespace TcpServer.Services
                             var randomNumber = _random.Next(1, 101);
                             _logger.LogInformation($"Generated random number: {randomNumber}");
 
+                            // Prepend length header (4 bytes)
                             var response = Math.Min(numberFromClient, randomNumber).ToString();
-                            var responseBytes = System.Text.Encoding.ASCII.GetBytes(response);
-
-                            await stream.WriteAsync(responseBytes);
+                            var length = BitConverter.GetBytes(response.Length);
+                            await stream.WriteAsync(length);
+                            await stream.WriteAsync(Encoding.ASCII.GetBytes(response));
                             _logger.LogInformation($"Sent: {response}");
                         }
                     }
