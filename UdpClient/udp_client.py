@@ -3,32 +3,22 @@ import socket
 def main():
     host = "192.168.56.101"
     port = 8080
-    
-    try:
-        # Create a UDP socket
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        
-        # Server address tuple
+
+    with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
         server_addr = (host, port)
+        print(f"Ready to send to {host}:{port}")
         
-        # Get user input
-        message = input("Please enter the message: ")
-        
-        # Send message to server
-        sock.sendto(message.encode(), server_addr)
-        print(f"Sent message to {host}:{port}")
-        
-        # Receive response from server
-        response, server = sock.recvfrom(256)
-        print(f"From Server: {response.decode()}")
-        
-    except socket.error as e:
-        print(f"Socket error: {e}")
-    except Exception as e:
-        print(f"Error: {e}")
-    finally:
-        # Close the socket
-        sock.close()
+        while True:
+            message = input("Enter number (or 'quit'): ")
+            if message.lower() == 'quit':
+                break
+            
+            # Send message to server
+            s.sendto((message + '\n').encode(), server_addr)
+            
+            # Receive response from server
+            data, server = s.recvfrom(1024)
+            print(f"From Server: {data.decode()}")
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,7 @@
 import socket
 
 def main():
-    host = "127.0.0.1"
+    host = "192.168.56.101"
     port = 8080
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
@@ -9,7 +9,7 @@ def main():
         print(f"Connected to {host}:{port}")
         
         while True:
-            message = input("Enter number: ")
+            message = input("Enter number (or 'quit'): ")
             if message.lower() == 'quit':
                 break
             

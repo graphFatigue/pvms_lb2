@@ -7,7 +7,7 @@ namespace TcpServer.Services
     {
         private readonly ILogger<TcpServerService> _logger;
         private TcpListener _tcpListener;
-        private readonly int _numberOnBackend = 100;
+        private readonly Random _random = new Random();
         private Task _executingTask;
         private CancellationTokenSource _cts;
 
@@ -70,7 +70,11 @@ namespace TcpServer.Services
 
                         if (int.TryParse(data, out var numberFromClient))
                         {
-                            var response = Math.Min(numberFromClient, _numberOnBackend).ToString();
+                            // Generate random number between 1-100 for this request
+                            var randomNumber = _random.Next(1, 101);
+                            _logger.LogInformation($"Generated random number: {randomNumber}");
+
+                            var response = Math.Min(numberFromClient, randomNumber).ToString();
                             var responseBytes = System.Text.Encoding.ASCII.GetBytes(response);
 
                             await stream.WriteAsync(responseBytes);
