@@ -66,9 +66,16 @@ namespace UdpServer.Services
                     _logger.LogInformation($"Generated random number: {randomNumber}");
 
                     var smallestNumber = Math.Min(clientNumber, randomNumber);
-                    var responseBytes = System.Text.Encoding.ASCII.GetBytes(smallestNumber.ToString());
+                    //var responseBytes = System.Text.Encoding.ASCII.GetBytes(smallestNumber.ToString());
+
+                    var response = Math.Min(clientNumber, randomNumber).ToString();
+
+                    // Add newline terminator for JMeter
+                    var responseBytes = System.Text.Encoding.ASCII.GetBytes(response + "\n");
 
                     await _udpListener.SendAsync(responseBytes, responseBytes.Length, remoteEndpoint);
+
+                    //await _udpListener.SendAsync(responseBytes, responseBytes.Length, remoteEndpoint);
                     _logger.LogInformation($"Sent smallest number to client: {smallestNumber}");
                 }
                 else
